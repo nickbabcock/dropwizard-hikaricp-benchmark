@@ -61,7 +61,7 @@ load_test () {
             # and use nohup so that when this ssh command (and connection) exits
             # the server keeps running
             poolSize=${POOL_SIZE} maxThreads=${MAX_THREADS} nohup \
-                java -jar echo-db.jar server config_new.yaml >/dev/null 2>&1 &
+                java -jar bench-1.0-SNAPSHOT.jar server config_new.yaml >/dev/null 2>&1 &
 
             # Wait for the server to properly initialize
             sleep 5s"
