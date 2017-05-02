@@ -85,7 +85,9 @@ Notice the index on the user id was created at the end -- for performance reason
 
 - Create two machines, one to host the application and the other to host the load tester
 - On the application server:
-  - Install postgres and load up the data
+  - Install postgres 
+  - Add a new user `nick` with password `nick`
+  - Load up the data
   - Install Java 8
   - Copy over the built benchmark jar and config_base.yaml
 - On the load testing server:
