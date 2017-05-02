@@ -31,6 +31,7 @@ tomcat:
   autoCommitByDefault: false
   validationInterval: '1 second'
   validatorClassName: 'com.example.TomValidator'
+  jdbcInterceptors: "ConnectionState;StatementFinalizer"
   password: nick
 EOF
 )
