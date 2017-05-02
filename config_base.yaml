@@ -1,0 +1,6 @@
+server:
+  minThreads: 7
+  maxThreads: ${maxThreads}
+  adminConnectors: []
+  requestLog:
+    appenders: []
