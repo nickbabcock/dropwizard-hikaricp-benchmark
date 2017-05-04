@@ -38,9 +38,7 @@ EOF
 
 # The actual function to do the load test
 load_test () {
-    YAML="$1"
-    CONNECTIONS="$3"
-    URL="http://benchmark:8080?user=87"
+    export CONNECTIONS="$1"
 
     # Nested for loop creates 42 configurations for each
     # test case, which causes this to be long script!
@@ -48,7 +46,6 @@ load_test () {
     for j in 1 2 4 8 16 32 64; do
         export POOL_SIZE=$i
         export MAX_THREADS=$((6 + j))
-        export CONFIG=$2
 
         # A pool size that is bigger than the number of max requests doesn't
         # really make sense because then there will always be some connections
@@ -57,36 +54,43 @@ load_test () {
             continue
         fi
 
-        echo "Pool: ${POOL_SIZE}. Server threads: ${MAX_THREADS}"
-        echo "${YAML}" | ssh benchmark "cat - config_base.yaml > config_new.yaml
-            # Kill the previous server instance if one exists
-            pkill java
-
-            # Wait for it to cleanly shut down as we reuse ports, etc
-            sleep 3s
-
-            # Set the environment variables used in the configuration files
-            # and use nohup so that when this ssh command (and connection) exits
-            # the server keeps running
-            poolSize=${POOL_SIZE} maxThreads=${MAX_THREADS} nohup \
-                java -jar bench-1.0-SNAPSHOT.jar server config_new.yaml >/dev/null 2>&1 &
-
-            # Wait for the server to properly initialize
-            sleep 5s"
-
-        # Load test for 60 seconds with four threads (as this machine has four
-        # CPUs to dedicate to load testing) Also use a custom lua script that
-        # reports various statistics into a csv format for further analysis as
-        # there'll be 80+ rows, with each row having several statistics.
-        # We're using "tee" here so that we can see all the stdout but only
-        # the last line, which is what is important to the csv is appended
-        # to the csv
-        wrk -c "$CONNECTIONS" -d 60s -t 4 -s report.lua ${URL} | \
-            tee >(tail -n 1 >> wrk-$CONNECTIONS.csv)
+        load_test_inner "$TOMCAT_YAML" "tomcat"
+        load_test_inner "$HIKARI_YAML" "hikari"
     done;
     done;
 }
 
+load_test_inner() {
+    YAML="$1"
+    export CONFIG="$2"
+    URL="http://benchmark:8080?user=87"
+    echo "Config: ${CONFIG}. Pool: ${POOL_SIZE}. Server threads: ${MAX_THREADS}"
+    echo "${YAML}" | ssh benchmark "cat - config_base.yaml > config_new.yaml
+        # Kill the previous server instance if one exists
+        pkill java
+
+        # Wait for it to cleanly shut down as we reuse ports, etc
+        sleep 3s
+
+        # Set the environment variables used in the configuration files
+        # and use nohup so that when this ssh command (and connection) exits
+        # the server keeps running
+        poolSize=${POOL_SIZE} maxThreads=${MAX_THREADS} nohup \
+            java -jar bench-1.0-SNAPSHOT.jar server config_new.yaml >/dev/null 2>&1 &
+
+        # Wait for the server to properly initialize
+        sleep 5s"
+
+    # Load test for 60 seconds with four threads (as this machine has four
+    # CPUs to dedicate to load testing) Also use a custom lua script that
+    # reports various statistics into a csv format for further analysis as
+    # there'll be 80+ rows, with each row having several statistics.
+    # We're using "tee" here so that we can see all the stdout but only
+    # the last line, which is what is important to the csv is appended
+    # to the csv
+    wrk -c "$CONNECTIONS" -d 60s -t 4 -s report.lua ${URL} | \
+        tee >(tail -n 1 >> wrk-$CONNECTIONS.csv)
+}
+
 # Call our function!
-load_test "$TOMCAT_YAML" "tomcat" 100
-load_test "$HIKARI_YAML" "hikari" 100
+load_test 100
