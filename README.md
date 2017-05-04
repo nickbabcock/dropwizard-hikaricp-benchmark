@@ -1,6 +1,6 @@
 # Dropwizard HikariCP Benchmark
 
-By default, [Dropwizard](https://github.com/dropwizard/dropwizard) bundles [Tomcat JDBC](https://tomcat.apache.org/tomcat-8.5-doc/jdbc-pool.html) for database [connection pooling](https://en.wikipedia.org/wiki/Connection_pool). However, Tomcat JDBC isn't the only competition, [HikariCP](https://github.com/brettwooldridge/HikariCP) exists (among others), and claims safety and performance. This repo is to create a reproducible testbed for comparing these two connection pools.
+By default, [Dropwizard](https://github.com/dropwizard/dropwizard) bundles [Tomcat JDBC](https://tomcat.apache.org/tomcat-8.5-doc/jdbc-pool.html) for database [connection pooling](https://en.wikipedia.org/wiki/Connection_pool). However, Tomcat JDBC isn't the only competition, [HikariCP](https://github.com/brettwooldridge/HikariCP) exists (among others), and claims safety and performance. This repo is to create a reproducible testbed for comparing these two connection pools. Realistically, one may not see a difference in performance between Tomcat and HikariCP in their applications, as even a 50% speed improvement won't mean much if only accounts for 5% of the costs, but each pool brings other tangible benefits to the table.
 
 This repo uses a yet released version of Dropwizard (1.2.0), so one will need to install the latest master branch.
 
