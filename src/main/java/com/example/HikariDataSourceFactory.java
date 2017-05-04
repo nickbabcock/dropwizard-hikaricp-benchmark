@@ -2,8 +2,8 @@ package com.example;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
@@ -15,10 +15,8 @@ import com.google.common.collect.Maps;
 import com.zaxxer.hikari.HikariConfig;
 
 import io.dropwizard.db.ManagedDataSource;
-import io.dropwizard.db.ManagedPooledDataSource;
 import io.dropwizard.db.PooledDataSourceFactory;
 import io.dropwizard.util.Duration;
-import io.dropwizard.validation.MinDuration;
 
 public class HikariDataSourceFactory implements PooledDataSourceFactory {
     @NotNull
@@ -35,7 +33,7 @@ public class HikariDataSourceFactory implements PooledDataSourceFactory {
 
     @Min(1)
     @JsonProperty
-    private int minSize = 8;
+    private OptionalInt minSize = OptionalInt.empty();
 
     @Min(1)
     @JsonProperty
@@ -136,7 +134,7 @@ public class HikariDataSourceFactory implements PooledDataSourceFactory {
 
     @Override
     public void asSingleConnectionPool() {
-        this.minSize = 1;
+        this.minSize = OptionalInt.empty();
         this.maxSize = 1;
     }
 
@@ -151,12 +149,12 @@ public class HikariDataSourceFactory implements PooledDataSourceFactory {
         config.setMetricRegistry(metricRegistry);
         config.setAutoCommit(autoCommit);
         config.setDataSourceProperties(properties);
-        config.setDataSourceClassName(this.datasourceClassName);
-        config.setMaximumPoolSize(this.maxSize);
-        config.setMinimumIdle(this.minSize);
+        config.setDataSourceClassName(datasourceClassName);
+        config.setMaximumPoolSize(maxSize);
+        minSize.ifPresent(config::setMinimumIdle);
         config.setPoolName(name);
-        config.setUsername(this.user);
-        config.setPassword(this.user != null && this.password == null ? "" : this.password);
+        config.setUsername(user);
+        config.setPassword(user != null && password == null ? "" : password);
         return new HikariManagedPooledDataSource(config);
     }
 
