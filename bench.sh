@@ -49,6 +49,14 @@ load_test () {
         export POOL_SIZE=$i
         export MAX_THREADS=$((6 + j))
         export CONFIG=$2
+
+        # A pool size that is bigger than the number of max requests doesn't
+        # really make sense because then there will always be some connections
+        # not being used, so skip the iteration in the interest in time
+        if [[ "$POOL_SIZE" -gt "$MAX_THREADS" ]]; then
+            continue
+        fi
+
         echo "Pool: ${POOL_SIZE}. Server threads: ${MAX_THREADS}"
         echo "${YAML}" | ssh benchmark "cat - config_base.yaml > config_new.yaml
             # Kill the previous server instance if one exists
