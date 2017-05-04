@@ -9,20 +9,6 @@ import com.zaxxer.hikari.HikariDataSource;
 import io.dropwizard.db.ManagedDataSource;
 
 public class HikariManagedPooledDataSource extends HikariDataSource implements ManagedDataSource {
-    /**
-     * Create a new data source with the given connection pool configuration.
-     *
-     * @param config
-     *            the connection pool configuration
-     * @param metricRegistry
-     *            the metric registry used to register the connection pool
-     *            metrics.
-     */
-    public HikariManagedPooledDataSource(final HikariConfig config, final MetricRegistry metricRegistry) {
-        this(config);
-        this.setMetricRegistry(metricRegistry);
-    }
-
     public HikariManagedPooledDataSource(final HikariConfig config) {
         super(config);
     }

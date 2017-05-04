@@ -148,6 +148,7 @@ public class HikariDataSourceFactory implements PooledDataSourceFactory {
         }
 
         final HikariConfig config = new HikariConfig();
+        config.setMetricRegistry(metricRegistry);
         config.setAutoCommit(autoCommit);
         config.setDataSourceProperties(properties);
         config.setDataSourceClassName(this.datasourceClassName);
@@ -156,7 +157,7 @@ public class HikariDataSourceFactory implements PooledDataSourceFactory {
         config.setPoolName(name);
         config.setUsername(this.user);
         config.setPassword(this.user != null && this.password == null ? "" : this.password);
-        return new HikariManagedPooledDataSource(config, metricRegistry);
+        return new HikariManagedPooledDataSource(config);
     }
 
     @Override
