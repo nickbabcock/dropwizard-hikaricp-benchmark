@@ -88,5 +88,5 @@ load_test () {
 }
 
 # Call our function!
-load_test "$TOMCAT_YAML" "tomcat" 300
-load_test "$HIKARI_YAML" "hikari" 300
+load_test "$TOMCAT_YAML" "tomcat" 100
+load_test "$HIKARI_YAML" "hikari" 100
