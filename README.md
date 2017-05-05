@@ -85,7 +85,7 @@ Notice the index on the user id was created at the end -- for performance reason
 
 - Create two machines, one to host the application and the other to host the load tester
 - On the application server:
-  - Install postgres 
+  - Install postgres
   - Add a new user `nick` with password `nick`
   - Load up the data
   - Install Java 8
@@ -94,7 +94,7 @@ Notice the index on the user id was created at the end -- for performance reason
   - Install wrk
   - Copy over `bench.sh` and `report.lua`
   - Install ssh key to the application server.
-  
+
 ## Results
 
 Work in progress :smile:
@@ -140,3 +140,11 @@ When it comes to metrics, HikariCP wins hands down with the deep integration
 with metric libraries that allow HikariCP to expose inner workings leading to
 more transparency. As long as Tomcat remains a black box, one will have to rely
 on creating their own metrics based on the API.
+
+### Healthchecks
+
+It's a small plus, but HikariCP is able to register healthchecks into the
+Dropwizard framework. Dropwizard already registers a healthcheck that sends a
+dummy query to the server, so it's a little bit redundant. Though, if
+healthchecks are added in the future, Dropwizard users would get to benefit for
+free.
