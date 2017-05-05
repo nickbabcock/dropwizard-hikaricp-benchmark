@@ -8,7 +8,6 @@ hikari:
   properties:
     'databaseName': 'postgres'
   user: nick
-  minSize: ${poolSize}
   maxSize: ${poolSize}
   password: nick
 EOF
