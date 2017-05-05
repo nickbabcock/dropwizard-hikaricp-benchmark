@@ -103,3 +103,40 @@ Work in progress :smile:
 
 ![](https://github.com/nickbabcock/dropwizard-hikaricp-benchmark/raw/master/img/top-response-throughput.png)
 
+### Metrics
+
+One of the highlights of using the Dropwizard framework is the integration of
+[Dropwizard Metrics](http://metrics.dropwizard.io/), which can send metrics to
+any number of places for further analysis. I know, personally, the metrics
+exposed through Dropwizard Metrics has saved my skin multiple times, by either
+being able to point the blame somewhere else or catch internal problem before
+it becomes noticeable :smile:
+
+Whereas all Tomcat metrics are done from the Dropwizard framework on the
+outside looking in, HikariCP works with Dropwizard metrics internally and can
+expose more meaningful metrics (as well as the same metrics reported with
+Tomcat).
+
+Both report:
+
+ - Number of connections active / idle / total
+ - Number of threads waiting for a connection
+
+But only HikariCP reports:
+
+ - Durations to create a connection
+ - Durations to obtain a connection (eg. if the connection had already been created and is sitting in the pool)
+ - How frequently connections are obtained
+ - How long connections are used before being returned to the pool
+ - When connections timeout
+
+Which adds more insight into where applications spend their time.
+
+Tomcat does report more metrics via JMX but these are not exposed in Dropwizard applications and aren't as useful:
+
+ - How many total connections created / borrowed / returned / released / reconnected
+
+When it comes to metrics, HikariCP wins hands down with the deep integration
+with metric libraries that allow HikariCP to expose inner workings leading to
+more transparency. As long as Tomcat remains a black box, one will have to rely
+on creating their own metrics based on the API.
