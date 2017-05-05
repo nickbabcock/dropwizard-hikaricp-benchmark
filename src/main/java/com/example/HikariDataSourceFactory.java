@@ -9,6 +9,7 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.health.HealthCheckRegistry;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Maps;
@@ -43,6 +44,8 @@ public class HikariDataSourceFactory implements PooledDataSourceFactory {
     private String validationQuery = "/* Health Check */ SELECT 1";
 
     private boolean autoCommentsEnabled = true;
+
+    private HealthCheckRegistry healthCheckRegistry;
 
     @JsonProperty
     @Override
@@ -138,6 +141,14 @@ public class HikariDataSourceFactory implements PooledDataSourceFactory {
         this.maxSize = 1;
     }
 
+    public HealthCheckRegistry getHealthCheckRegistry() {
+        return healthCheckRegistry;
+    }
+
+    public void setHealthCheckRegistry(HealthCheckRegistry healthCheckRegistry) {
+        this.healthCheckRegistry = healthCheckRegistry;
+    }
+
     @Override
     public ManagedDataSource build(final MetricRegistry metricRegistry, final String name) {
         final Properties properties = new Properties();
@@ -147,6 +158,10 @@ public class HikariDataSourceFactory implements PooledDataSourceFactory {
 
         final HikariConfig config = new HikariConfig();
         config.setMetricRegistry(metricRegistry);
+        if (healthCheckRegistry != null) {
+            config.setHealthCheckRegistry(healthCheckRegistry);
+        }
+
         config.setAutoCommit(autoCommit);
         config.setDataSourceProperties(properties);
         config.setDataSourceClassName(datasourceClassName);

@@ -46,6 +46,8 @@ public class BenchApplication extends Application<BenchConfiguration> {
                     final Environment environment) {
         final DBIFactory factory = new DBIFactory();
         final Optional<PooledDataSourceFactory> tomcatFactory = config.getTomcatFactory().map(x -> x);
+
+        config.getHikariFactory().ifPresent(x -> x.setHealthCheckRegistry(environment.healthChecks()));
         final Optional<PooledDataSourceFactory> hikariFactory = config.getHikariFactory().map(x -> x);
         final PooledDataSourceFactory datasource = tomcatFactory.orElse(hikariFactory.orElse(null));
         final DBI jdbi = factory.build(environment, datasource, "postgresql");
