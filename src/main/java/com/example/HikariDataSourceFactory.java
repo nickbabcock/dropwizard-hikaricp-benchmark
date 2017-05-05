@@ -20,8 +20,9 @@ import io.dropwizard.db.PooledDataSourceFactory;
 import io.dropwizard.util.Duration;
 
 public class HikariDataSourceFactory implements PooledDataSourceFactory {
-    @NotNull
     private String datasourceClassName = null;
+
+    private String driverClass = null;
 
     private String user = null;
 
@@ -61,7 +62,7 @@ public class HikariDataSourceFactory implements PooledDataSourceFactory {
     @JsonProperty
     @Override
     public String getDriverClass() {
-        return this.datasourceClassName;
+        return this.driverClass;
     }
 
     @Override
@@ -135,6 +136,31 @@ public class HikariDataSourceFactory implements PooledDataSourceFactory {
         this.autoCommit = autoCommit;
     }
 
+    @JsonProperty
+    public OptionalInt getMinSize() {
+        return minSize;
+    }
+
+    @JsonProperty
+    public String getDatasourceClassName() {
+        return datasourceClassName;
+    }
+
+    @JsonProperty
+    public void setMinSize(OptionalInt minSize) {
+        this.minSize = minSize;
+    }
+
+    @JsonProperty
+    public int getMaxSize() {
+        return maxSize;
+    }
+
+    @JsonProperty
+    public void setMaxSize(int maxSize) {
+        this.maxSize = maxSize;
+    }
+
     @Override
     public void asSingleConnectionPool() {
         this.minSize = OptionalInt.empty();
@@ -147,6 +173,10 @@ public class HikariDataSourceFactory implements PooledDataSourceFactory {
 
     public void setHealthCheckRegistry(HealthCheckRegistry healthCheckRegistry) {
         this.healthCheckRegistry = healthCheckRegistry;
+    }
+
+    public void setDriverClass(String driverClass) {
+        this.driverClass = driverClass;
     }
 
     @Override
@@ -164,7 +194,12 @@ public class HikariDataSourceFactory implements PooledDataSourceFactory {
 
         config.setAutoCommit(autoCommit);
         config.setDataSourceProperties(properties);
-        config.setDataSourceClassName(datasourceClassName);
+        if (datasourceClassName != null) {
+            config.setDataSourceClassName(datasourceClassName);
+        } else {
+            config.setDriverClassName(driverClass);
+        }
+
         config.setMaximumPoolSize(maxSize);
         minSize.ifPresent(config::setMinimumIdle);
         config.setPoolName(name);

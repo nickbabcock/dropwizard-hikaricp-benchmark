@@ -1,0 +1,7 @@
+datasourceClassName: org.postgresql.ds.PGSimpleDataSource
+properties:
+  'databaseName': 'postgres'
+user: nick
+maxSize: 12
+password: nickss
+autoCommit: true
