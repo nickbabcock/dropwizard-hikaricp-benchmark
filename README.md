@@ -98,3 +98,8 @@ Notice the index on the user id was created at the end -- for performance reason
 ## Results
 
 Work in progress :smile:
+
+![](https://github.com/nickbabcock/dropwizard-hikaricp-benchmark/raw/master/img/top-response-latencies.png)
+
+![](https://github.com/nickbabcock/dropwizard-hikaricp-benchmark/raw/master/img/top-response-throughput.png)
+
