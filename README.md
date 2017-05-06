@@ -142,6 +142,17 @@ The top five configurations for Tomcat for the environment:
 |tomcat |        16|          32|   773777| 9.120| 11.611| 7.041| 13.791| 45.019|
 |tomcat |        32|          32|   769750| 9.110| 11.270| 7.136| 14.840| 43.041|
 
+### Benchmark Improvements
+
+- Database pools would prefer to have a fixed number of connections (like we have in this benchmark), but some people may want to start small and only allocate connections as needed, even at the cost of some performance.
+- This benchmark only tests one endpoint that makes one small select statement. Here are some ideas for more endpoints:
+  - An endpoint that makes many small selects
+  - An endpoint that makes one large select
+  - An endpoint that does an insert, update, delete
+  - An endpoint that wraps several statements in one transaction
+- These test really shouldn't ran in a virtualized environment on my dev machine
+- The database and web server proably won't be deployed side by side in a production app
+
 ### Metrics
 
 One of the highlights of using the Dropwizard framework is the integration of
