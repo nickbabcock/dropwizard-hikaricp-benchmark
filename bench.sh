@@ -28,7 +28,6 @@ tomcat:
   rollbackOnReturn: true
   checkConnectionOnBorrow: true
   validationInterval: '500 ms'
-  validatorClassName: 'com.example.TomValidator'
   jdbcInterceptors: "ConnectionState;StatementFinalizer"
   password: nick
 EOF
