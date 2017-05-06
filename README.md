@@ -142,16 +142,27 @@ The top five configurations for Tomcat for the environment:
 |tomcat |        16|          32|   773777| 9.120| 11.611| 7.041| 13.791| 45.019|
 |tomcat |        32|          32|   769750| 9.110| 11.270| 7.136| 14.840| 43.041|
 
-### Benchmark Improvements
+So what are the defaults for Dropwizard?:
 
-- Database pools would prefer to have a fixed number of connections (like we have in this benchmark), but some people may want to start small and only allocate connections as needed, even at the cost of some performance.
-- This benchmark only tests one endpoint that makes one small select statement. Here are some ideas for more endpoints:
-  - An endpoint that makes many small selects
-  - An endpoint that makes one large select
-  - An endpoint that does an insert, update, delete
-  - An endpoint that wraps several statements in one transaction
-- These test really shouldn't ran in a virtualized environment on my dev machine
-- The database and web server proably won't be deployed side by side in a production app
+ - Min pool size: 10
+ - Max pool size: 100
+ - Min request threads: ~1
+ - Max request threads: ~1024
+
+Whoa, unless you're running incredibly large infrastructure, you may want to consider updating your Dropwizard config!
+
+## Non-performance Comparison
+
+### Safety
+
+HikariCP claims that it is safe by default, but what does that mean?
+
+- Connections are rolled back when returned to the pool, so any uncommited statements are not affected by the next user. It's a code smell for an application to not have auto commit or explicitly commit / rollback (eg. transaction), but HikariCP will have your back so you don't shoot yourself in the foot. Imagine an endpoint where you're executing 1000 inserts and for some reason they are not in a transaction and auto commit is disabled. Halfway through, an exception strikes and the connection is handed back to the pool. If rollback was not enabled, the next could take that same connection, successfully insert 1000 rows, and now all of a sudden you have 1500 rows that were inserted, which would certainly be surprising! Tomcat can be configured to have this behavior by setting `rollbackOnReturn: true`
+- If the connection hasn't been used in the last 500ms, HikariCP will ensure that it is valid before handing it to you. This could be helpful if the database being worked with has a max connection time, and once exceeded, will be killed. Tomcat would be happy to give you this killed connection if `checkConnectionOnBorrow: true` (for dropwizard) `testOnBorrow: true` (tomcat jdbc api). To be fair, HikariCP can hand you an invalid connection if the database failed within 500ms of the last time the connection was accessed, but in this case the database is probably down. The difference is relatively small here, if the database closed connections after 30mins Tomcat would be erroring out every 30mins, whereas HikariCP would handle the closure gracefully.
+- If one was traversing a large resultset and an exception happened in the middle, HikariCP will close the statement when the connection is returned to the pool, Tomcat won't. This means that if these exceptions happen often, one could have a large number of statements in mid traversal that are hanging up the database. It is possible to register the `StatementFinalizer` jdbc interceptor on Tomcat, which will close statements on connection returns except when there is large amounts of GC pressure (due to weak references)
+- One would expect that if a user modifies the auto commit, transaction level, etc of the connection that those values would be reverted once the connection is sent back to the pool. This is true for HikariCP, but not for Tomcat without registering the `ConnectionState` jdbc interceptor. Honestly, I don't know why this isn't considered a bug
+
+HikariCP wins when it comes to safety. The fact that other pools prefer bugs by default is a bit mind boggling. 
 
 ### Metrics
 
@@ -198,3 +209,14 @@ Dropwizard framework. Dropwizard already registers a healthcheck that sends a
 dummy query to the server, so it's a little bit redundant. Though, if
 healthchecks are added in the future, Dropwizard users would get to benefit for
 free.
+
+## Benchmark Improvements
+
+- Database pools would prefer to have a fixed number of connections (like we have in this benchmark), but some people may want to start small and only allocate connections as needed, even at the cost of some performance.
+- This benchmark only tests one endpoint that makes one small select statement. Here are some ideas for more endpoints:
+  - An endpoint that makes many small selects
+  - An endpoint that makes one large select
+  - An endpoint that does an insert, update, delete
+  - An endpoint that wraps several statements in one transaction
+- These test really shouldn't ran in a virtualized environment on my dev machine
+- The database and web server proably won't be deployed side by side in a production app
