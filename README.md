@@ -99,9 +99,48 @@ Notice the index on the user id was created at the end -- for performance reason
 
 Work in progress :smile:
 
+The environment in which the database and the server were deployed:
+
+- 4 cores of an i7-6700k
+- 8GB RAM
+- Ubuntu 14.04
+- Postgres 9.5
+
+Most apps will find this a deficient setup for their production environment, but this is what I have, so I encourage those to run the benchmark on their own servers.
+
+To start the analysis off, let's look at the top 5 configurations for both HikariCP and Tomcat and see their response latencies and request throughtput
+
 ![](https://github.com/nickbabcock/dropwizard-hikaricp-benchmark/raw/master/img/top-response-latencies.png)
 
 ![](https://github.com/nickbabcock/dropwizard-hikaricp-benchmark/raw/master/img/top-response-throughput.png)
+
+HikariCP and Tomcat have similar latencies when included in a Dropwizard application, but it appears that HikariCP has an edge when it comes to throughput; however, I don't believe it is significant enough. If we look at the same graphs but across all configurations (i.e. including *sub-optimal* configurations) the story is a little different.
+
+![](https://github.com/nickbabcock/dropwizard-hikaricp-benchmark/raw/master/img/response-latencies.png)
+
+![](https://github.com/nickbabcock/dropwizard-hikaricp-benchmark/raw/master/img/response-throughput.png)
+
+The data is a lot more mixed. This is testament that it is important to for one to configure their server and db pools. So while HikariCP is faster across microbenchmarks it may not make a large difference in an application. A game of inches sometimes doesn't matter when a request has to go a mile.
+
+The top five configurations for HikariCP for the environment:
+
+|config | pool size| max threads| requests|  mean|  stdev|   p50|    p90|    p99|
+|:------|---------:|-----------:|--------:|-----:|------:|-----:|------:|------:|
+|hikari |         8|           8|   975405| 7.123|  9.886| 5.429| 10.349| 32.639|
+|hikari |         4|           4|   870198| 7.652|  8.659| 6.378| 10.660| 32.423|
+|hikari |        16|          16|   869029| 7.972|  8.705| 5.925| 13.409| 36.106|
+|hikari |        16|          32|   805108| 8.646|  9.624| 6.712| 14.248| 42.048|
+|hikari |        32|          32|   779251| 9.358| 10.504| 6.537| 17.808| 48.531|
+
+The top five configurations for Tomcat for the environment:
+
+|config | pool size| max threads| requests|  mean|  stdev|   p50|    p90|    p99|
+|:------|---------:|-----------:|--------:|-----:|------:|-----:|------:|------:|
+|tomcat |        16|          16|   876972| 7.648|  9.525| 6.545| 11.051| 29.946|
+|tomcat |         8|           8|   856844| 7.766|  9.427| 6.763| 11.014| 30.708|
+|tomcat |         8|          16|   796295| 8.391|  9.903| 7.256| 11.398| 32.154|
+|tomcat |        16|          32|   773777| 9.120| 11.611| 7.041| 13.791| 45.019|
+|tomcat |        32|          32|   769750| 9.110| 11.270| 7.136| 14.840| 43.041|
 
 ### Metrics
 

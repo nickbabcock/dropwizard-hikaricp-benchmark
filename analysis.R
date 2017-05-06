@@ -1,5 +1,6 @@
 library(tidyverse)
 library(readr)
+library(knitr)
 
 columns <- c("config", "pool size", "max threads", "requests", "mean", "stdev", "p50", "p90", "p99")
 
@@ -26,16 +27,22 @@ top_5 <- df %>% group_by(config) %>%
   top_n(n = 5, wt = requests) %>%
   arrange(-requests)
 
-ggplot(gather(top_5, percentile, response, p50, p90, p99), 
-       aes(config, response, ymin=0, fill=percentile)) +
-  geom_jitter(size=4, width=0.15, shape=21) +
-  xlab("") + ylab("Response latency (ms)") +
-  ggtitle("Response Latencies",
-          subtitle = "For the top 5 configurations by throughput for each pool")
+requests_plots <- function(m_d, subtitle) {
+  ggplot(gather(m_d, percentile, response, p50, p90, p99), 
+         aes(config, response, ymin=0, fill=percentile)) +
+    geom_jitter(size=4, width=0.15, shape=21) +
+    xlab("") + ylab("Response latency (ms)") +
+    ggtitle("Response Latencies", subtitle = subtitle)
+  
+  ggplot(m_d, aes(x = factor(0), y = requests, fill=config, ymin=0)) +
+    geom_jitter(size=4, width=0.15, shape=21) +
+    xlab("") + ylab("Request Throughput") +
+    scale_x_discrete(breaks = NULL) + coord_flip() +
+    ggtitle("Request Throughput", subtitle = subtitle)  
+}
 
-ggplot(top_5, aes(x = factor(0), y = requests, fill=config, ymin=0)) +
-  geom_jitter(size=4, width=0.15, shape=21) +
-  xlab("") + ylab("Request Throughput") +
-  scale_x_discrete(breaks = NULL) + coord_flip() +
-  ggtitle("Request Throughput",
-          subtitle = "For the top 5 configurations by throughput for each pool")
+requests_plots(top_5, "For top 5 configurations by throughput for each pool")
+requests_plots(df, "For all configurations")
+
+kable(top_5 %>% filter(config == 'hikari'), "markdown")
+kable(top_5 %>% filter(config == 'tomcat'), "markdown")
