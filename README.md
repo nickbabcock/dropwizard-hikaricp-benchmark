@@ -164,6 +164,17 @@ HikariCP claims that it is safe by default, but what does that mean?
 
 HikariCP wins when it comes to safety. The fact that other pools prefer bugs by default is a bit mind boggling. 
 
+A by product of being safe by default is that HikariCP configuration can be quite short!
+
+```yaml
+datasourceClassName: org.postgresql.ds.PGSimpleDataSource
+properties:
+  'databaseName': 'postgres'
+user: ${user}
+maxSize: ${poolSize}
+password: ${password}
+```
+
 ### Metrics
 
 One of the highlights of using the Dropwizard framework is the integration of
