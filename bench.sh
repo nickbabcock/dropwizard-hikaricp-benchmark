@@ -27,7 +27,6 @@ tomcat:
   initialSize: ${poolSize}
   rollbackOnReturn: true
   checkConnectionOnBorrow: true
-  autoCommitByDefault: false
   validationInterval: '500 ms'
   validatorClassName: 'com.example.TomValidator'
   jdbcInterceptors: "ConnectionState;StatementFinalizer"
