@@ -232,5 +232,5 @@ This benchmark is not perfect and can be improved in the following way.
   - An endpoint that does an insert, update, delete
   - An endpoint that wraps several statements in one transaction
 - These test really shouldn't ran in a virtualized environment on my dev machine
-- The database and web server proably won't be deployed side by side in a production app
+- The database and web server probably won't be deployed side by side in a production app
 - Create an even lighter endpoint that performs a single request (the db pool should have more of an impact).
