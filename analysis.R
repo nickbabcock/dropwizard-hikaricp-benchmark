@@ -46,3 +46,20 @@ requests_plots(df, "For all configurations")
 
 kable(top_5 %>% filter(config == 'hikari'), "markdown")
 kable(top_5 %>% filter(config == 'tomcat'), "markdown")
+
+g_df <- gather(df, percentile, response, p50, p90, p99)
+
+ggplot(g_df, aes(factor(`pool size`), response, fill=percentile, ymin=0)) +
+  geom_jitter(size=4, width=0.3, shape=21) +
+  xlab("DB Pool size") + ylab("Response latency (ms)") +
+  ggtitle("Response latencies at different pool sizes",
+          subtitle = "With percentiles and faceted by config") +
+  facet_grid(config ~ .)
+
+ggplot(g_df, aes(factor(`max threads`), response, fill=percentile, ymin=0)) +
+  geom_jitter(size=4, width=0.3, shape=21) +
+  xlab("Contending Threads") + ylab("Response latency (ms)") +
+  ggtitle("Response latencies at different number of contending threads",
+          subtitle = "With percentiles and faceted by config") +
+  facet_grid(config ~ .)
+  
