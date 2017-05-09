@@ -151,6 +151,16 @@ So what are the defaults for Dropwizard?:
 
 Whoa, unless you're running incredibly large infrastructure, you may want to consider updating your Dropwizard config!
 
+Let's see how the pool size affects latencies.
+
+![](https://github.com/nickbabcock/dropwizard-hikaricp-benchmark/raw/master/img/response-latencies-at-different-pool-sizes)
+
+There does appear to be a slight parabolic relationship that is more pronounced for tomcat and it's 99th percentile for pool sizes 4 to 8 in size. The reason why there are less number of data points as the pool sizes increase is that all pool sizes were put under contention, so only test cases where there were at least 32 threads contending for a connection would be included. The inverse relation is true for the next graph where the number of contending threads are varied.
+
+![](https://github.com/nickbabcock/dropwizard-hikaricp-benchmark/raw/master/img/response-throughput.png)
+
+Both configs have a more pronounced parabolic relationship with more contending threads and an increase in the 99th latency percentile. What's especially interesting is that when there are 64 contending threads, no matter what the pool size was for HikariCP, the 90th percentile was above 25ms, whereas nearly all Tomcat configurations are below 25ms. This means that without a properly configured pool size and number of contending threads (this case Jetty's thread), one could miss out on performance if they had just stayed with Tomcat.
+
 ## Non-performance Comparison
 
 ### Safety
