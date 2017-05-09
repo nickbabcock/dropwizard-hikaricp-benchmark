@@ -1,6 +1,6 @@
 # Dropwizard HikariCP Benchmark
 
-By default, [Dropwizard](https://github.com/dropwizard/dropwizard) bundles [Tomcat JDBC](https://tomcat.apache.org/tomcat-8.5-doc/jdbc-pool.html) for database [connection pooling](https://en.wikipedia.org/wiki/Connection_pool). However, Tomcat JDBC isn't the only competition, [HikariCP](https://github.com/brettwooldridge/HikariCP) exists (among others), and claims safety and performance. This repo is to create a reproducible testbed for comparing these two connection pools. Realistically, one may not see a difference in performance between Tomcat and HikariCP in their applications, as even a 50% speed improvement won't mean much if only accounts for 5% of the costs, but each pool brings other tangible benefits to the table.
+By default, [Dropwizard](https://github.com/dropwizard/dropwizard) bundles [Tomcat JDBC](https://tomcat.apache.org/tomcat-8.5-doc/jdbc-pool.html) for database [connection pooling](https://en.wikipedia.org/wiki/Connection_pool). However, Tomcat JDBC isn't without competition, [HikariCP](https://github.com/brettwooldridge/HikariCP) exists (among others), and claims safety and performance. This repo is to create a reproducible testbed for comparing these two connection pools. Realistically, one may not see a difference in performance between Tomcat and HikariCP in their applications, as even a 50% speed improvement won't mean much if only accounts for 5% of the costs, but each pool brings other tangible benefits to the table.
 
 This repo uses a yet released version of Dropwizard (1.2.0), so one will need to install the latest master branch.
 
@@ -94,10 +94,10 @@ Notice the index on the user id was created at the end -- for performance reason
   - Install wrk
   - Copy over `bench.sh` and `report.lua`
   - Install ssh key to the application server.
+  - Execute `bench.sh`
+  - A file called `wrk-100.csv` should be created
 
 ## Results
-
-Work in progress :smile:
 
 The environment in which the database and the server were deployed:
 
@@ -106,9 +106,7 @@ The environment in which the database and the server were deployed:
 - Ubuntu 14.04
 - Postgres 9.5
 
-Most apps will find this a deficient setup for their production environment, but this is what I have, so I encourage those to run the benchmark on their own servers.
-
-To start the analysis off, let's look at the top 5 configurations for both HikariCP and Tomcat and see their response latencies and request throughtput
+To start the analysis off, let's look at the top 5 configurations for both HikariCP and Tomcat and see their HTTP response latencies and request throughtput
 
 ![](https://github.com/nickbabcock/dropwizard-hikaricp-benchmark/raw/master/img/top-response-latencies.png)
 
@@ -120,7 +118,7 @@ HikariCP and Tomcat have similar latencies when included in a Dropwizard applica
 
 ![](https://github.com/nickbabcock/dropwizard-hikaricp-benchmark/raw/master/img/response-throughput.png)
 
-The data is a lot more mixed. This is testament that it is important to for one to configure their server and db pools. So while HikariCP is faster across microbenchmarks it may not make a large difference in an application. A game of inches sometimes doesn't matter when a request has to go a mile.
+The data is a lot more mixed spread out, so it is important for one to configure their server and db pools. While HikariCP is faster across microbenchmarks it may not make a large difference in an application. A game of inches sometimes doesn't matter when a request has to go a mile.
 
 The top five configurations for HikariCP for the environment:
 
@@ -155,11 +153,15 @@ Let's see how the pool size affects latencies.
 
 ![](https://github.com/nickbabcock/dropwizard-hikaricp-benchmark/raw/master/img/response-latencies-at-different-pool-sizes.png)
 
-There does appear to be a slight parabolic relationship that is more pronounced for tomcat and it's 99th percentile for pool sizes 4 to 8 in size. The reason why there are less number of data points as the pool sizes increase is that all pool sizes were put under contention, so only test cases where there were at least 32 threads contending for a connection would be included. The inverse relation is true for the next graph where the number of contending threads are varied.
+There does appear to be a slight parabolic relationship for the 99th percentile that is more pronounced for tomcat. The optimal configurations for minimizing the 99th percentile appear to be pool sizes 4 to 8 in size.
+
+The reason why there are fewer data points as the pool sizes increase is that all pool sizes were put under contention, so only configurations where there were at least 32 threads contending for a connection would be included when the DB pool size is 32. The inverse relation is true for the next graph where the number of contending threads are varied.
 
 ![](https://github.com/nickbabcock/dropwizard-hikaricp-benchmark/raw/master/img/response-latencies-at-different-contending-threads.png)
 
-Both configs have a more pronounced parabolic relationship with more contending threads and an increase in the 99th latency percentile. What's especially interesting is that when there are 64 contending threads, no matter what the pool size was for HikariCP, the 90th percentile was above 25ms, whereas nearly all Tomcat configurations are below 25ms. This means that without a properly configured pool size and number of contending threads (this case Jetty's thread), one could miss out on performance if they had just stayed with Tomcat.
+Both configs have a more pronounced parabolic relationship. Increasing the number contending threads after 16 correlates with an increase in the 99th HTTP response latency percentile. What's especially interesting is that when there are 64 contending threads, no matter what the pool size was for HikariCP, the 90th percentile was above 25ms, whereas nearly all Tomcat configurations are below 25ms. This means that without a properly configured connection pool and number of contending threads (in this case, they're Jetty threads), one could miss out on performance if they had just stayed with Tomcat.
+
+So using HikariCP in Dropwizard *may* carry no benefits performance-wise, so let's move onto other aspects.
 
 ## Non-performance Comparison
 
@@ -172,7 +174,7 @@ HikariCP claims that it is safe by default, but what does that mean?
 - If one was traversing a large resultset and an exception happened in the middle, HikariCP will close the statement when the connection is returned to the pool, Tomcat won't. This means that if these exceptions happen often, one could have a large number of statements in mid traversal that are hanging up the database. It is possible to register the `StatementFinalizer` jdbc interceptor on Tomcat, which will close statements on connection returns except when there is large amounts of GC pressure (due to weak references)
 - One would expect that if a user modifies the auto commit, transaction level, etc of the connection that those values would be reverted once the connection is sent back to the pool. This is true for HikariCP, but not for Tomcat without registering the `ConnectionState` jdbc interceptor. Honestly, I don't know why this isn't considered a bug
 
-HikariCP wins when it comes to safety. The fact that other pools prefer bugs by default is a bit mind boggling. 
+HikariCP wins when it comes to safety. Tomcat JDBC can get close to the HikariCP's safety if Tomcat JDBC is configured correctly, but achieving safety through configuration is the wrong approach. The prioritization should be (in order): [make it work, make it right, make it fast](http://wiki.c2.com/?MakeItWorkMakeItRightMakeItFast).
 
 A by product of being safe by default is that HikariCP configuration can be quite short!
 
@@ -230,6 +232,10 @@ Dropwizard framework. Dropwizard already registers a healthcheck that sends a
 dummy query to the server, so it's a little bit redundant. Though, if
 healthchecks are added in the future, Dropwizard users would get to benefit for
 free.
+
+### Conclusion
+
+Without a large and significant performance improvement seen in the Dropwizard benchmark, there are fewer reasons for Dropwizard users to migrate to HikariCP; however, more metrics and less configuration are still tangible advantages. While I don't expect the default connection pool in Dropwizard to be HikariCP anytime soon, a drop-in replacement would allow users interested in the benefits to migrate without pain.
 
 ## Benchmark Improvements
 
