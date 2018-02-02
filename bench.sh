@@ -43,7 +43,7 @@ function load_test_inner {
     sleep 2
 
     # Warmup
-    wrk -c 100 -d 10s -t 4 ${URL}
+    wrk -c 100 -d 60s -t 4 ${URL}
 
     # Load test for 10 seconds with four threads (as this machine has four
     # CPUs to dedicate to load testing). Also use a custom lua script that
