@@ -24,87 +24,35 @@ Id  CreationDate          ClosedDate            DeletionDate          Score  Own
 17  2008-08-01T05:09:55Z  NA                    NA                    114    2            11
 ```
 
-## PostgreSQL
-
-Our database of choice will be [Postgres](https://www.postgresql.org/), but we'll need to configure the box to aid performance. [PostgreSQL 9.0 High Performance](https://www.amazon.com/PostgreSQL-High-Performance-Gregory-Smith/dp/184951030X) comes chock-full of performance tips. The following tips were applied from the book:
-
-- Set the disk read ahead to 4096: blockdev --setra 4096 /dev/sda
-- Prevent the OS from updating file times by mounting the filesystem with `noatime`
-- vm.swappiness=0
-- vm.overcommit_memory=2
-
-Caveat, it is most likely that none of these tweaks will have a significant
-impact because query will be against a single user (so Postgres won't have to
-go far to fetch the data from its cache).
-
-The following Postgres configurations were taken from
-[PGTune](http://pgtune.leopard.in.ua/) for a 4GB web application.
-
-```
-max_connections = 200
-shared_buffers = 1GB
-effective_cache_size = 3GB
-work_mem = 5242kB
-maintenance_work_mem = 256MB
-min_wal_size = 1GB
-max_wal_size = 2GB
-checkpoint_completion_target = 0.7
-wal_buffers = 16MB
-default_statistics_target = 10
-```
-
-## The SQL
-
-There'll only be one table for all the data. We'll first load the data using
-Postgres's awesome
-[`COPY`](https://www.postgresql.org/docs/9.5/static/sql-copy.html) command (the
-data should be uncompressed first unless using the `PROGRAM` directive)
-
-```sql
-CREATE TABLE questions (
-    id serial PRIMARY KEY,
-    creationDate TIMESTAMPTZ,
-    closedDate TIMESTAMPTZ,
-    deletionDate TIMESTAMPTZ,
-    score int,
-    ownerUserId int,
-    answerCount int
-);
-
-COPY questions FROM '/tmp/questions.csv'
-WITH (HEADER, FORMAT CSV, NULL 'NA');
-
-CREATE INDEX user_idx ON questions(ownerUserId);
-```
-
-Notice the index on the user id was created at the end -- for performance reasons.
+We'll have our benchmark query on an indexed `OwnerUserId`
 
 ## Running the Benchmark
 
-- Create two machines, one to host the application and the other to host the load tester
-- On the application server:
-  - Install postgres
-  - Add a new user `nick` with password `nick`
-  - Load up the data
-  - Install Java 8
-  - Copy over the built benchmark jar and config_base.yaml
-- On the load testing server:
-  - Install wrk
-  - Copy over `bench.sh` and `report.lua`
-  - Install ssh key to the application server.
-  - Execute `bench.sh`
-  - A file called `wrk-100.csv` should be created
+The first time running the database it will need to load the data and create
+the index, so I suggest `docker-compose up db` and wait for things to settle
+down. You only need to do this once.
+
+Then to run the benchmark:
+
+```
+./bench.sh
+```
+
+The database and the web app will be pinned to a single CPU to represent both being isolated machine. Make sure the benchmark machine has at least 2 cores (preferentially 4).
+
+A file called `wrk-100.csv` should will created
 
 ## Results
 
 The environment in which the database and the server were deployed:
 
+- Docker
 - 4 cores of an i7-6700k
 - 8GB RAM
-- Ubuntu 14.04
-- Postgres 9.5
+- Ubuntu 16.04
+- Postgres 9.6
 
-To start the analysis off, let's look at the top 5 configurations for both HikariCP and Tomcat and see their HTTP response latencies and request throughtput
+To start the analysis off, let's look at the top 5 configurations for both HikariCP and Tomcat and see their HTTP response latencies and request throughput
 
 ![](https://github.com/nickbabcock/dropwizard-hikaricp-benchmark/raw/master/img/top-response-latencies.png)
 
