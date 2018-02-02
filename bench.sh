@@ -1,42 +1,19 @@
 #!/bin/bash
 
-# The HikariCP test case extends the base yaml with the following
-# additional configuration
-HIKARI_YAML=$(cat <<'EOF'
-hikari:
-  datasourceClassName: org.postgresql.ds.PGSimpleDataSource
-  properties:
-    'databaseName': 'postgres'
-  user: nick
-  maxSize: ${poolSize}
-  password: nick
-EOF
-)
+set -euo pipefail
 
-# The Tomcat test case extends the base yaml with the following
-# additional configuration. Notice how more configuration options
-# are specified, one of the selling points of Hikari is that
-# there are no "unsafe" options.
-TOMCAT_YAML=$(cat <<'EOF'
-tomcat:
-  driverClass: org.postgresql.Driver
-  url: jdbc:postgresql://localhost/postgres
-  user: nick
-  minSize: ${poolSize}
-  maxSize: ${poolSize}
-  initialSize: ${poolSize}
-  rollbackOnReturn: true
-  checkConnectionOnBorrow: true
-  validationInterval: '500 ms'
-  jdbcInterceptors: "ConnectionState;StatementFinalizer"
-  password: nick
-EOF
-)
+function clean_up {
+    echo "Cleaning up"
+    docker-compose down
+}
+
+trap clean_up SIGHUP SIGINT SIGTERM
+
+docker-compose up -d db
+docker-compose build web
 
 # The actual function to do the load test
-load_test () {
-    export CONNECTIONS="$1"
-
+function load_test {
     # Nested for loop creates 42 configurations for each
     # test case, which causes this to be long script!
     for i in 1 2 4 8 16 32; do
@@ -51,43 +28,39 @@ load_test () {
             continue
         fi
 
-        load_test_inner "$TOMCAT_YAML" "tomcat"
-        load_test_inner "$HIKARI_YAML" "hikari"
+        load_test_inner "tomcat-config.yaml" "tomcat"
+        load_test_inner "hikari-config.yaml" "hikaricp"
     done;
     done;
 }
 
-load_test_inner() {
+function load_test_inner {
     YAML="$1"
     export CONFIG="$2"
-    URL="http://benchmark:8080?user=87"
+    URL="http://127.0.0.1:8080?user=87"
     echo "Config: ${CONFIG}. Pool: ${POOL_SIZE}. Server threads: ${MAX_THREADS}"
-    echo "${YAML}" | ssh benchmark "cat - config_base.yaml > config_new.yaml
-        # Kill the previous server instance if one exists
-        pkill java
+    NAME=$(docker-compose run -d -e POOL_SIZE=$POOL_SIZE -e MAX_THREADS=$MAX_THREADS --service-ports web "$YAML")
+    sleep 2
 
-        # Wait for it to cleanly shut down as we reuse ports, etc
-        sleep 3s
+    # Warmup
+    wrk -c 100 -d 10s -t 4 ${URL}
 
-        # Set the environment variables used in the configuration files
-        # and use nohup so that when this ssh command (and connection) exits
-        # the server keeps running
-        poolSize=${POOL_SIZE} maxThreads=${MAX_THREADS} nohup \
-            java -jar bench-1.0-SNAPSHOT.jar server config_new.yaml >/dev/null 2>&1 &
-
-        # Wait for the server to properly initialize
-        sleep 5s"
-
-    # Load test for 60 seconds with four threads (as this machine has four
-    # CPUs to dedicate to load testing) Also use a custom lua script that
+    # Load test for 10 seconds with four threads (as this machine has four
+    # CPUs to dedicate to load testing). Also use a custom lua script that
     # reports various statistics into a csv format for further analysis as
     # there'll be 80+ rows, with each row having several statistics.
     # We're using "tee" here so that we can see all the stdout but only
     # the last line, which is what is important to the csv is appended
     # to the csv
-    wrk -c "$CONNECTIONS" -d 60s -t 4 -s report.lua ${URL} | \
-        tee >(tail -n 1 >> wrk-$CONNECTIONS.csv)
+    for k in {0..4}; do
+        wrk -c 100 -d 10s -t 4 -s report.lua ${URL} | \
+            tee >(tail -n 1 >> wrk-100.csv)
+    done;
+
+    docker stop $NAME
+    docker rm $NAME
 }
 
-# Call our function!
-load_test 100
+load_test
+
+clean_up

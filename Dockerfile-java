@@ -1,0 +1,11 @@
+FROM maven:3.5.2
+COPY . /root/
+WORKDIR /root
+RUN mvn verify
+
+FROM openjdk:8-jre-alpine
+COPY --from=0 /root/target/bench-1.0-SNAPSHOT.jar /.
+COPY --from=0 /root/tomcat-config.yaml /.
+COPY --from=0 /root/hikari-config.yaml /.
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "bench-1.0-SNAPSHOT.jar", "server"]

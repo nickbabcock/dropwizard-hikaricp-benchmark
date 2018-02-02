@@ -1,0 +1,19 @@
+tomcat:
+  driverClass: org.postgresql.Driver
+  url: jdbc:postgresql://db/postgres
+  user: postgres
+  minSize: ${POOL_SIZE}
+  maxSize: ${POOL_SIZE}
+  initialSize: ${POOL_SIZE}
+  rollbackOnReturn: true
+  checkConnectionOnBorrow: true
+  validationInterval: '500 ms'
+  jdbcInterceptors: "ConnectionState;StatementFinalizer"
+  password: ${PG_PASS}
+
+server:
+  minThreads: 7
+  maxThreads: ${MAX_THREADS}
+  adminConnectors: []
+  requestLog:
+    appenders: []

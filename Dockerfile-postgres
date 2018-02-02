@@ -1,0 +1,7 @@
+FROM postgres:10.1
+RUN set -x \
+    && apt-get update && apt-get install -y --no-install-recommends ca-certificates wget && rm -rf /var/lib/apt/lists/* \
+    && wget -O - https://github.com/dgrtwo/StackLite/raw/84136173ad5982c7d6cb6bffe3afc9b389c0dc47/questions.csv.gz | gzip -d -c > /tmp/questions.csv \
+   && apt-get purge -y --auto-remove ca-certificates wget
+
+COPY setup.sql /docker-entrypoint-initdb.d/.

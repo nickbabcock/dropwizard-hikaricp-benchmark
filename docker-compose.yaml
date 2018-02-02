@@ -1,0 +1,25 @@
+version: '2'
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile-java
+    ports:
+     - "127.0.0.1:8080:8080"
+    links:
+     - db
+    environment:
+     - POOL_SIZE
+     - PG_PASS=nick
+     - MAX_THREADS=8
+    cpuset: '0'
+
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile-postgres
+    environment:
+      - POSTGRES_PASSWORD=nick
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    cpuset: '0'

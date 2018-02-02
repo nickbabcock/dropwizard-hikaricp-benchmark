@@ -1,0 +1,15 @@
+hikari:
+  datasourceClassName: org.postgresql.ds.PGSimpleDataSource
+  properties:
+    'databaseName': 'postgres'
+    'serverName': 'db'
+  user: postgres
+  maxSize: ${POOL_SIZE}
+  password: ${PG_PASS}
+
+server:
+  minThreads: 7
+  maxThreads: ${MAX_THREADS}
+  adminConnectors: []
+  requestLog:
+    appenders: []
