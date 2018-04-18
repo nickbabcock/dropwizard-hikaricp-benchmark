@@ -24,6 +24,8 @@ public class HikariDataSourceFactory implements PooledDataSourceFactory {
 
     private String driverClass = null;
 
+    private String url = null;
+
     private String user = null;
 
     private String password = null;
@@ -67,7 +69,12 @@ public class HikariDataSourceFactory implements PooledDataSourceFactory {
 
     @Override
     public String getUrl() {
-        return "I'm not needed";
+        return url;
+    }
+
+    @JsonProperty
+    public void setUrl(String url) {
+        this.url = url;
     }
 
     @JsonProperty
@@ -198,6 +205,10 @@ public class HikariDataSourceFactory implements PooledDataSourceFactory {
             config.setDataSourceClassName(datasourceClassName);
         } else {
             config.setDriverClassName(driverClass);
+        }
+
+        if (url != null) {
+            config.setJdbcUrl(url);
         }
 
         config.setMaximumPoolSize(maxSize);
